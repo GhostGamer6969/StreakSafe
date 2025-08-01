@@ -1,6 +1,7 @@
 use anchor_lang::prelude::*;
 
 #[account]
+#[derive(InitSpace)]
 pub struct Vault {
-    streak_owner: Pubkey,
+    pub streak_owner: Pubkey,
 }
