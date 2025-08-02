@@ -4,4 +4,5 @@ use anchor_lang::prelude::*;
 #[derive(InitSpace)]
 pub struct Vault {
     pub streak_owner: Pubkey,
+    pub bump: u8,
 }

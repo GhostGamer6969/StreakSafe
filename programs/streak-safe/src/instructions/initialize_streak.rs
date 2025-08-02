@@ -3,7 +3,7 @@ use anchor_lang::{
     system_program::{transfer, Transfer},
 };
 
-use crate::{Status, Streak, Vault};
+use crate::{Config, Status, Streak, Vault};
 
 #[derive(Accounts)]
 #[instruction(uuid:u64)]
@@ -29,6 +29,13 @@ pub struct InitializeStreak<'info> {
     )]
     pub vault: Account<'info, Vault>,
 
+    #[account(
+        seeds = [b"config"],
+        // bump = *config.load_bump()?,
+        bump = config.bump,
+    )]
+    pub config: Account<'info, Config>,
+
     pub system_program: Program<'info, System>,
 }
 
@@ -41,6 +48,8 @@ impl<'info> InitializeStreak<'info> {
         amount: u64,
         bumps: InitializeStreakBumps,
     ) -> Result<()> {
+        require_gte!(self.config.min_stake, amount, ErrorCode::StakeTooLow);
+
         self.streak.set_inner(Streak {
             categories,
             total_checkins,
@@ -49,13 +58,16 @@ impl<'info> InitializeStreak<'info> {
             status: Status::Ongoing,
             streak_bump: bumps.streak,
         });
-        self.initialize_vault()?;
+
+        self.initialize_vault(bumps)?;
+
         self.transfer_to_vault(amount)
     }
 
-    pub fn initialize_vault(&mut self) -> Result<()> {
+    pub fn initialize_vault(&mut self, bumps: InitializeStreakBumps) -> Result<()> {
         self.vault.set_inner(Vault {
             streak_owner: self.user.key(),
+            bump: bumps.vault,
         });
         Ok(())
     }
