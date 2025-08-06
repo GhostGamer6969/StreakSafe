@@ -3,11 +3,12 @@ use anchor_lang::prelude::{
     *,
 };
 
-#[derive(BorshDeserialize, BorshSerialize, Clone, InitSpace)]
+#[derive(BorshDeserialize, BorshSerialize, Clone, InitSpace, PartialEq, Eq)]
 pub enum Status {
     Ongoing,
     Completed,
     Slashed,
+    Failed,
 }
 
 #[account]

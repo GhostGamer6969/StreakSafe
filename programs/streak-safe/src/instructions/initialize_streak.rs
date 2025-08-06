@@ -3,7 +3,7 @@ use anchor_lang::{
     system_program::{transfer, Transfer},
 };
 
-use crate::{Config, Status, Streak, Vault};
+use crate::{error::ErrorC, Config, Status, Streak, Vault};
 
 #[derive(Accounts)]
 #[instruction(uuid:u64)]
@@ -31,7 +31,6 @@ pub struct InitializeStreak<'info> {
 
     #[account(
         seeds = [b"config"],
-        // bump = *config.load_bump()?,
         bump = config.bump,
     )]
     pub config: Account<'info, Config>,
@@ -48,7 +47,7 @@ impl<'info> InitializeStreak<'info> {
         amount: u64,
         bumps: InitializeStreakBumps,
     ) -> Result<()> {
-        require_gte!(self.config.min_stake, amount, ErrorCode::StakeTooLow);
+        require_gte!(self.config.min_stake, amount, ErrorC::LowStake);
 
         self.streak.set_inner(Streak {
             categories,

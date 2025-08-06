@@ -25,14 +25,14 @@ impl<'info> UpdateConfig<'info> {
         bumps: &InitializeConfigBumps,
     ) -> Result<()> {
         self.config.set_inner(Config {
-            min_stake: min_stake.unwrap(),
+            min_stake: min_stake.unwrap() | self.config.min_stake,
             slash_receiver: Pubkey::from_str_const("DWyWmTCLqfLAzfeiaDZmxVa2Y8qWaehYyHsiFtpPNfND"),
-            expiry_sec: expiry_sec.unwrap(),
-            max_checkin_gap_sec: max_checkin_gap_sec.unwrap(),
-            min_checkin_gap_sec: min_checkin_gap_sec.unwrap(),
-            min_votes: min_votes.unwrap(),
+            expiry_sec: expiry_sec.unwrap() | self.config.expiry_sec,
+            max_checkin_gap_sec: max_checkin_gap_sec.unwrap() | self.config.max_checkin_gap_sec,
+            min_checkin_gap_sec: min_checkin_gap_sec.unwrap() | self.config.min_checkin_gap_sec,
+            min_votes: min_votes.unwrap() | self.config.min_votes,
             bump: bumps.config,
         });
-        todo!()
+        Ok(())
     }
 }
