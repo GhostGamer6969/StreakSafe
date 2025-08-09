@@ -45,9 +45,9 @@ impl<'info> InitializeStreak<'info> {
         total_checkins: u16,
         required_checkin: u16,
         amount: u64,
-        bumps: InitializeStreakBumps,
+        bumps: &InitializeStreakBumps,
     ) -> Result<()> {
-        require_gte!(self.config.min_stake, amount, ErrorC::LowStake);
+        require!(self.config.min_stake < amount, ErrorC::LowStake);
 
         self.streak.set_inner(Streak {
             categories,
@@ -63,7 +63,7 @@ impl<'info> InitializeStreak<'info> {
         self.transfer_to_vault(amount)
     }
 
-    pub fn initialize_vault(&mut self, bumps: InitializeStreakBumps) -> Result<()> {
+    pub fn initialize_vault(&mut self, bumps: &InitializeStreakBumps) -> Result<()> {
         self.vault.set_inner(Vault {
             streak_owner: self.user.key(),
             bump: bumps.vault,

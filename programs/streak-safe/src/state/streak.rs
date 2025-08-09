@@ -15,9 +15,9 @@ pub enum Status {
 #[derive(InitSpace)]
 pub struct Streak {
     pub categories: u8,
+    pub start_timestamp: i64,
     pub total_checkins: u16,
     pub required_checkin: u16,
-    pub start_timestamp: i64,
     pub status: Status,
     pub streak_bump: u8,
 }

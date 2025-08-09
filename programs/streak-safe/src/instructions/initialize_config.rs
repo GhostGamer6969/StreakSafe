@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::Config;
+use crate::{error::ErrorC, Config};
 
 #[derive(Accounts)]
 pub struct InitializeConfig<'info> {
@@ -23,14 +23,22 @@ impl<'info> InitializeConfig<'info> {
     pub fn initialize_config(
         &mut self,
         min_stake: u64,
+        min_checkins: u64,
         expiry_sec: i64,
         max_checkin_gap_sec: i64,
         min_checkin_gap_sec: i64,
         min_votes: u8,
         bumps: &InitializeConfigBumps,
     ) -> Result<()> {
+        require!(
+            self.admin.key()
+                == Pubkey::from_str_const("DWyWmTCLqfLAzfeiaDZmxVa2Y8qWaehYyHsiFtpPNfND"),
+            ErrorC::NotAdmin
+        );
+
         self.config.set_inner(Config {
             min_stake,
+            min_checkins,
             slash_receiver: Pubkey::from_str_const("DWyWmTCLqfLAzfeiaDZmxVa2Y8qWaehYyHsiFtpPNfND"),
             expiry_sec,
             max_checkin_gap_sec,
