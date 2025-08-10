@@ -11,6 +11,10 @@ pub struct CheckIn<'info> {
     #[account(mut)]
     pub user: Signer<'info>,
     pub user_b: SystemAccount<'info>,
+
+    #[account(
+        constraint = slash_reciever.key() == config.slash_receiver,
+    )]
     pub slash_reciever: SystemAccount<'info>,
 
     #[account(
@@ -78,6 +82,12 @@ impl<'info> CheckIn<'info> {
             ErrorC::NotOngoing
         );
 
+        match self.streak.status {
+            Status::Ongoing => {}
+            Status::Completed => self.complete_streak()?,
+            Status::Failed => self.fail_streak()?,
+        };
+
         require!(self.streak.status == Status::Ongoing, ErrorC::NotOngoing);
 
         match self.latest_checkin.to_account_info().data_is_empty() {
@@ -95,7 +105,8 @@ impl<'info> CheckIn<'info> {
                         < self.config.expiry_sec,
                     ErrorC::NotVerified
                 );
-                self.streak.status = Status::Failed
+                self.streak.status = Status::Failed;
+                self.fail_streak()?;
             }
         }
 
@@ -133,7 +144,10 @@ impl<'info> CheckIn<'info> {
                     self.latest_checkin_b.exit(&self.user.key())?;
                     self.streak_b.total_checkins += 1;
                 }
-                false => self.streak_b.status = Status::Failed,
+                false => {
+                    self.streak_b.status = Status::Failed;
+                    self.fail_streak_b()?;
+                }
             },
             false => {}
         }
@@ -142,15 +156,18 @@ impl<'info> CheckIn<'info> {
     }
 
     pub fn complete_streak(&mut self) -> Result<()> {
-        // require!()
+        require!(
+            self.streak.status == Status::Completed,
+            ErrorC::NotCompleted
+        );
 
         let cpi_accounts = Transfer {
             from: self.vault.to_account_info(),
             to: self.user.to_account_info(),
         };
-        // [b"vault", streak.key().as_ref()]
+
         let binding = self.streak.key().clone();
-        let seeds = &[&b"vault"[..], binding.as_ref(), &[self.vault.bump]];
+        let seeds = &[&b"vault"[..], &binding.as_ref(), &[self.vault.bump]];
 
         let signer_seeds = &[&seeds[..]];
 
@@ -188,8 +205,33 @@ impl<'info> CheckIn<'info> {
         );
 
         transfer(cpi_context, self.vault.get_lamports())?;
+        Ok(())
+    }
+    pub fn fail_streak_b(&mut self) -> Result<()> {
+        require!(self.streak_b.status == Status::Failed, ErrorC::NotFailed);
+        require!(
+            self.slash_reciever.key() == self.config.slash_receiver,
+            ErrorC::NotSlashReciver
+        );
 
-        self.streak.status = Status::Slashed;
+        let cpi_accounts = Transfer {
+            from: self.vault_b.to_account_info(),
+            to: self.slash_reciever.to_account_info(),
+        };
+
+        let binding = self.streak_b.key().clone();
+
+        let seeds = &[&b"vault"[..], binding.as_ref(), &[self.vault_b.bump]];
+
+        let signer_seeds = &[&seeds[..]];
+
+        let cpi_context = CpiContext::new_with_signer(
+            self.system_program.to_account_info(),
+            cpi_accounts,
+            signer_seeds,
+        );
+
+        transfer(cpi_context, self.vault.get_lamports())?;
         Ok(())
     }
 }

@@ -52,14 +52,12 @@ pub mod streak_safe {
         )
     }
 }
-pub fn fail_streak(ctx: Context<FailStreak>) -> Result<()> {
-    ctx.accounts.slash()
-}
-pub fn complete_streak(ctx: Context<CompleteStreak>) -> Result<()> {
-    ctx.accounts.transfer_to_user()
-}
 
-pub fn check_in(ctx: Context<CheckIn>) -> Result<()> {
-
-    todo!()
+pub fn check_in(
+    ctx: Context<CheckIn>,
+    image: String,
+    is_accept: bool,
+    bumps: &CheckInBumps,
+) -> Result<()> {
+    ctx.accounts.check_in(image, is_accept, bumps)
 }

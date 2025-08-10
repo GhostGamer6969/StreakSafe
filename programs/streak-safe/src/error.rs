@@ -20,6 +20,9 @@ pub enum ErrorC {
     #[msg("Streak not Failed")]
     NotFailed,
 
+    #[msg("Streak not Copleted")]
+    NotCompleted,
+
     #[msg("The reciever doesnt match")]
     NotSlashReciver,
 

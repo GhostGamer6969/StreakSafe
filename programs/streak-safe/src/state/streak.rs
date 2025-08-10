@@ -1,13 +1,9 @@
-use anchor_lang::prelude::{
-    borsh::{BorshDeserialize, BorshSerialize},
-    *,
-};
+use anchor_lang::prelude::*;
 
-#[derive(BorshDeserialize, BorshSerialize, Clone, InitSpace, PartialEq, Eq)]
+#[derive(AnchorDeserialize, AnchorSerialize, Clone, InitSpace, PartialEq, Eq)]
 pub enum Status {
     Ongoing,
     Completed,
-    Slashed,
     Failed,
 }
 
