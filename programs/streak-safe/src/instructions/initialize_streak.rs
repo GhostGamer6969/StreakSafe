@@ -41,8 +41,8 @@ pub struct InitializeStreak<'info> {
 impl<'info> InitializeStreak<'info> {
     pub fn initialize_streak(
         &mut self,
+        _uuid: u64,
         categories: u8,
-        total_checkins: u16,
         required_checkin: u16,
         amount: u64,
         bumps: &InitializeStreakBumps,
@@ -51,7 +51,7 @@ impl<'info> InitializeStreak<'info> {
 
         self.streak.set_inner(Streak {
             categories,
-            total_checkins,
+            total_checkins: 0,
             required_checkin,
             start_timestamp: Clock::get()?.unix_timestamp,
             status: Status::Ongoing,

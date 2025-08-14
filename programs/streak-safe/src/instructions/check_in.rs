@@ -18,7 +18,7 @@ pub struct CheckIn<'info> {
     pub slash_reciever: SystemAccount<'info>,
 
     #[account(
-        init,
+        init_if_needed,
         space = 8 + LatestCheckIn::INIT_SPACE,
         payer = user,
         seeds = [b"check_in",streak.key().as_ref()],
@@ -28,7 +28,7 @@ pub struct CheckIn<'info> {
 
     #[account(
         mut,
-        close = user,
+        // close = user,
         seeds = [b"streak",user.key().as_ref(),uuid.to_le_bytes().as_ref()],
         bump = streak.streak_bump,
     )]
@@ -36,7 +36,7 @@ pub struct CheckIn<'info> {
 
     #[account(
         mut,
-        close = user,
+        // close = user,
         seeds = [b"vault",streak.key().as_ref()],
         bump = vault.bump,
     )]
@@ -50,7 +50,7 @@ pub struct CheckIn<'info> {
 
     #[account(
         mut,
-        close = slash_reciever,
+        // close = slash_reciever,
         seeds = [b"streak",user_b.key().as_ref(),uuid_b.to_le_bytes().as_ref()],
         bump = streak_b.streak_bump,
     )]
@@ -58,25 +58,32 @@ pub struct CheckIn<'info> {
 
     #[account(
         mut,
-        close = slash_reciever,
-        seeds = [b"vault",streak.key().as_ref()],
-        bump = vault.bump,
+        // close = slash_reciever,
+        seeds = [b"vault",streak_b.key().as_ref()],
+        bump = vault_b.bump,
     )]
     pub vault_b: Account<'info, Vault>,
 
     #[account(
         mut,
-        close = user,
-        seeds = [b"check_in",user_b.key().as_ref(),uuid_b.to_le_bytes().as_ref()],
+        // close = user,
+        constraint = latest_checkin.key() != latest_checkin_b.key(),
+        seeds = [b"check_in",streak_b.key().as_ref()],
         bump = latest_checkin_b.bump,
     )]
     pub latest_checkin_b: Account<'info, LatestCheckIn>,
-
     pub system_program: Program<'info, System>,
 }
 
 impl<'info> CheckIn<'info> {
-    pub fn check_in(&mut self, image: String, is_accept: bool, bumps: &CheckInBumps) -> Result<()> {
+    pub fn check_in(
+        &mut self,
+        _uuid: u64,
+        _uuid_b: u64,
+        image: String,
+        is_accept: bool,
+        bumps: &CheckInBumps,
+    ) -> Result<()> {
         require!(
             self.streak.total_checkins < self.streak.required_checkin,
             ErrorC::NotOngoing
@@ -90,7 +97,7 @@ impl<'info> CheckIn<'info> {
 
         require!(self.streak.status == Status::Ongoing, ErrorC::NotOngoing);
 
-        match self.latest_checkin.to_account_info().data_is_empty() {
+        match self.latest_checkin.image.is_empty() {
             true => {
                 self.latest_checkin.set_inner(LatestCheckIn {
                     check_in_time: Clock::get()?.unix_timestamp,
@@ -102,14 +109,12 @@ impl<'info> CheckIn<'info> {
             false => {
                 require!(
                     (Clock::get()?.unix_timestamp - self.latest_checkin.check_in_time)
-                        < self.config.expiry_sec,
+                        > self.config.expiry_sec,
                     ErrorC::NotVerified
                 );
                 self.streak.status = Status::Failed;
-                self.fail_streak()?;
             }
         }
-
         self.verify(is_accept)
     }
 
@@ -177,7 +182,10 @@ impl<'info> CheckIn<'info> {
             signer_seeds,
         );
 
-        transfer(cpi_context, self.vault.get_lamports())
+        transfer(cpi_context, self.vault.get_lamports())?;
+
+        self.latest_checkin.exit(&self.user.key())?;
+        Ok(())
     }
 
     pub fn fail_streak(&mut self) -> Result<()> {
@@ -205,6 +213,8 @@ impl<'info> CheckIn<'info> {
         );
 
         transfer(cpi_context, self.vault.get_lamports())?;
+        self.latest_checkin.exit(&self.user.key())?;
+
         Ok(())
     }
     pub fn fail_streak_b(&mut self) -> Result<()> {
@@ -232,6 +242,8 @@ impl<'info> CheckIn<'info> {
         );
 
         transfer(cpi_context, self.vault.get_lamports())?;
+
+        self.latest_checkin_b.exit(&self.user_b.key())?;
         Ok(())
     }
 }

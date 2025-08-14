@@ -4,7 +4,10 @@ use crate::{error::ErrorC, Config};
 
 #[derive(Accounts)]
 pub struct InitializeConfig<'info> {
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint = admin.key() == Pubkey::from_str_const("DWyWmTCLqfLAzfeiaDZmxVa2Y8qWaehYyHsiFtpPNfND")
+    )]
     pub admin: Signer<'info>,
 
     #[account(
@@ -25,8 +28,6 @@ impl<'info> InitializeConfig<'info> {
         min_stake: u64,
         min_checkins: u64,
         expiry_sec: i64,
-        max_checkin_gap_sec: i64,
-        min_checkin_gap_sec: i64,
         min_votes: u8,
         bumps: &InitializeConfigBumps,
     ) -> Result<()> {
@@ -41,8 +42,6 @@ impl<'info> InitializeConfig<'info> {
             min_checkins,
             slash_receiver: Pubkey::from_str_const("DWyWmTCLqfLAzfeiaDZmxVa2Y8qWaehYyHsiFtpPNfND"),
             expiry_sec,
-            max_checkin_gap_sec,
-            min_checkin_gap_sec,
             min_votes,
             bump: bumps.config,
         });
